@@ -8,38 +8,82 @@
     <script src="https://cdn.rawgit.com/eKoopmans/html2pdf.js/master/dist/html2pdf.bundle.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
             margin: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
         table {
             width: 100%;
-            border-collapse: collapse;
             margin-top: 20px;
+            border-collapse: collapse;
+            background-color: #fff;
+            border-radius: 5px;
+            overflow: hidden;
         }
         table, th, td {
-            border: 1px solid black;
+            border: 1px solid #ddd;
         }
         th, td {
-            padding: 10px;
+            padding: 12px;
             text-align: center;
         }
-        .form-group {
-            margin-bottom: 10px;
+        th {
+            background-color: #007BFF;
+            color: white;
         }
-        .form-group label {
-            margin-right: 10px;
+        tbody tr:hover {
+            background-color: #f1f1f1;
         }
         .delete-btn {
+            background-color: #dc3545;
             color: white;
-            background-color: red;
             border: none;
             padding: 5px 10px;
+            border-radius: 3px;
             cursor: pointer;
+        }
+        .delete-btn:hover {
+            background-color: #a71d2a;
         }
         .today-btn {
             margin-left: 10px;
-            padding: 5px 10px;
-            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+        }
+        .today-btn:hover {
+            background-color: #1c7c30;
         }
     </style>
 </head>
@@ -47,21 +91,29 @@
     <h1>Bill Generator</h1>
     <div>
         <div class="form-group">
+            <label for="customerName">ชื่อลูกค้า (ไทย):</label>
+            <input type="text" id="customerName" placeholder="กรอกชื่อลูกค้า">
+        </div>
+        <div class="form-group">
             <label for="date">วันที่:</label>
             <input type="date" id="date">
             <button class="today-btn" onclick="setToday()">Today</button>
         </div>
         <div class="form-group">
+            <label for="licensePlate">ทะเบียนรถ:</label>
+            <input type="text" id="licensePlate" pattern="[A-Za-z0-9]+" title="Alphanumeric only" placeholder="กรอกทะเบียนรถ">
+        </div>
+        <div class="form-group">
             <label for="weight">น้ำหนัก (กิโล):</label>
-            <input type="number" id="weight" step="0.01">
+            <input type="number" id="weight" inputmode="decimal" pattern="[0-9]*" step="0.01" placeholder="กรอกน้ำหนัก">
         </div>
         <div class="form-group">
             <label for="price">ราคาต่อหน่วย:</label>
-            <input type="number" id="price" step="0.01">
+            <input type="number" id="price" inputmode="decimal" pattern="[0-9]*" step="0.01" placeholder="กรอกราคาต่อหน่วย">
         </div>
         <div class="form-group">
             <label for="withdrew">ยอดเบิก:</label>
-            <input type="number" id="withdrew" step="0.01">
+            <input type="number" id="withdrew" inputmode="decimal" pattern="[0-9]*" step="0.01" placeholder="กรอกยอดเบิก">
         </div>
         <button onclick="addEntry()">เพิ่มรายการ</button>
         <button onclick="generatePDF()">สรุปบิล</button>
@@ -71,6 +123,7 @@
         <thead>
             <tr>
                 <th>วันที่</th>
+                <th>ทะเบียนรถ</th>
                 <th>น้ำหนัก (กิโล)</th>
                 <th>ราคาต่อหน่วย</th>
                 <th>ยอดเบิก</th>
@@ -82,7 +135,7 @@
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="5"><strong>ยอดสรุป</strong></td>
+                <td colspan="6"><strong>ยอดสรุป</strong></td>
                 <td id="finalAmount">0</td>
             </tr>
         </tfoot>
@@ -92,64 +145,53 @@
         let entries = [];
         let finalAmount = 0;
 
-        // Set the date field to today's date
         function setToday() {
-            const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+            const today = new Date().toISOString().split('T')[0];
             document.getElementById('date').value = today;
         }
 
         function addEntry() {
             const date = document.getElementById('date').value;
+            const licensePlate = document.getElementById('licensePlate').value.trim();
             const weight = parseFloat(document.getElementById('weight').value);
             const price = parseFloat(document.getElementById('price').value);
             const withdrew = parseFloat(document.getElementById('withdrew').value);
 
-            if (!date || isNaN(weight) || isNaN(price) || isNaN(withdrew)) {
+            if (!date || !licensePlate || isNaN(weight) || isNaN(price) || isNaN(withdrew)) {
                 alert('Please fill in all fields correctly.');
                 return;
             }
 
-            // Calculate total amount, round down, and format with commas
             const totalAmount = Math.floor((weight / 15) * price - withdrew);
+            entries.push({ date, licensePlate, weight, price, withdrew, totalAmount });
 
-            entries.push({ date, weight, price, withdrew, totalAmount });
-
-            // Update the final amount
             finalAmount += totalAmount;
-
             updateTable();
         }
 
         function updateTable() {
             const tbody = document.querySelector('#billTable tbody');
-            tbody.innerHTML = ''; // Clear existing rows
+            tbody.innerHTML = '';
 
-            // Add rows for each entry
             entries.forEach((entry, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = 
                     `<td>${entry.date}</td>
-                    <td>${entry.weight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td>${entry.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td>${entry.withdrew.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td>${entry.totalAmount.toLocaleString()}</td>
-                    <td><button class="delete-btn" onclick="deleteEntry(${index})">Delete</button></td>`
-                ;
+                    <td>${entry.licensePlate}</td>
+                    <td>${entry.weight.toFixed(2)}</td>
+                    <td>${entry.price.toFixed(2)}</td>
+                    <td>${entry.withdrew.toFixed(2)}</td>
+                    <td>${entry.totalAmount}</td>
+                    <td><button class="delete-btn" onclick="deleteEntry(${index})">Delete</button></td>`;
                 tbody.appendChild(row);
             });
 
-            // Update the final amount in the footer
             document.getElementById('finalAmount').textContent = finalAmount.toLocaleString();
         }
 
         function deleteEntry(index) {
-            // Subtract the total amount of the entry being deleted from the final amount
             finalAmount -= entries[index].totalAmount;
-
-            // Remove the entry from the array
             entries.splice(index, 1);
-
-            // Update the table
             updateTable();
         }
 
@@ -157,30 +199,34 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Add title
+            // Add title and customer name
             doc.setFontSize(16);
             doc.text('Bill Report', 105, 10, { align: 'center' }); // Centered title
             doc.setFontSize(12);
+            const customerName = document.getElementById('customerName').value || 'N/A';
+            doc.text(`Customer Name: ${customerName}`, 10, 20);
 
-            // Draw a horizontal line below the title
-            doc.line(10, 15, 200, 15); // x1, y1, x2, y2
+            // Draw a horizontal line below the title and customer name
+            doc.line(10, 25, 200, 25); // x1, y1, x2, y2
 
             // Add table headers
-            let y = 25; // Vertical position for the table
+            let y = 30; // Vertical position for the table
+            doc.setFontSize(10);
             doc.text('Date', 10, y);
-            doc.text('Weight (kg)', 40, y);
-            doc.text('Price per Unit', 80, y);
-            doc.text('Withdrew Amount', 120, y);
-            doc.text('Total Amount', 160, y);
+            doc.text('License Plate', 40, y);
+            doc.text('Weight (kg)', 80, y);
+            doc.text('Price per Unit', 110, y);
+            doc.text('Withdrew Amount', 140, y);
+            doc.text('Total Amount', 170, y);
 
             // Draw a horizontal line below the headers
             doc.line(10, y + 2, 200, y + 2);
-            y += 10;
+            y += 8;
 
             // Add table rows
             entries.forEach(entry => {
-                // Ensure all values are strings and not undefined/null
                 const date = entry.date || 'N/A';
+                const licensePlate = entry.licensePlate || 'N/A';
                 const weight = entry.weight
                     ? entry.weight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     : '0.00';
@@ -189,26 +235,27 @@
                     : '0.00';
                 const withdrew = entry.withdrew
                     ? `-${Math.abs(entry.withdrew).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                    : '-0.00'; // Add minus sign
+                    : '-0.00';
                 const totalAmount = entry.totalAmount
                     ? entry.totalAmount.toLocaleString()
                     : '0';
 
                 // Add row data
                 doc.text(date, 10, y);
-                doc.text(weight, 40, y);
-                doc.text(price, 80, y);
-                doc.text(withdrew, 120, y); // Withdrew amount with minus sign
-                doc.text(totalAmount, 160, y);
+                doc.text(licensePlate, 40, y);
+                doc.text(weight, 80, y);
+                doc.text(price, 110, y);
+                doc.text(withdrew, 140, y);
+                doc.text(totalAmount, 170, y);
 
                 // Draw a horizontal line below each row
                 doc.line(10, y + 2, 200, y + 2);
-                y += 10;
+                y += 8; // Reduced row spacing
             });
 
             // Add final amount
             y += 10; // Add some space before the final amount
-            doc.setFontSize(14);
+            doc.setFontSize(12);
             doc.text(`Final Amount: ${finalAmount.toLocaleString()}`, 10, y);
 
             // Draw a horizontal line above the final amount
@@ -217,76 +264,7 @@
             // Save the PDF
             doc.save('bill_report.pdf');
         }
-        // Thai Sarabun Support
-        // async function generatePDF() {
-        //     const { jsPDF } = window.jspdf;
-        //     const doc = new jsPDF();
 
-        //     // Embed a Thai font (TH Sarabun example)
-        //     doc.addFileToVFS('THSarabunNew-Regular.ttf', '<base64_encoded_font_here>');
-        //     doc.addFont('THSarabunNew-Regular.ttf', 'THSarabun', 'normal');
-        //     doc.setFont('THSarabun', 'normal');  // Use Thai font
-
-        //     // Add title
-        //     doc.setFontSize(16);
-        //     doc.text('รายงานบิล', 105, 10, { align: 'center' }); // Title in Thai
-        //     doc.setFontSize(12);
-
-        //     // Draw a horizontal line below the title
-        //     doc.line(10, 15, 200, 15); // x1, y1, x2, y2
-
-        //     // Add table headers
-        //     let y = 25; // Vertical position for the table
-        //     doc.text('วันที่', 10, y);  // Thai text
-        //     doc.text('น้ำหนัก (กิโล)', 40, y);  // Thai text
-        //     doc.text('ราคาต่อหน่วย', 80, y);  // Thai text
-        //     doc.text('ยอดเบิก', 120, y);  // Thai text
-        //     doc.text('ยอดรวม', 160, y);  // Thai text
-
-        //     // Draw a horizontal line below the headers
-        //     doc.line(10, y + 2, 200, y + 2);
-        //     y += 10;
-
-        //     // Add table rows
-        //     entries.forEach(entry => {
-        //         // Ensure all values are strings and not undefined/null
-        //         const date = entry.date || 'N/A';
-        //         const weight = entry.weight
-        //             ? entry.weight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-        //             : '0.00';
-        //         const price = entry.price
-        //             ? entry.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-        //             : '0.00';
-        //         const withdrew = entry.withdrew
-        //             ? `-${Math.abs(entry.withdrew).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        //             : '-0.00'; // Add minus sign
-        //         const totalAmount = entry.totalAmount
-        //             ? entry.totalAmount.toLocaleString()
-        //             : '0';
-
-        //         // Add row data
-        //         doc.text(date, 10, y);
-        //         doc.text(weight, 40, y);
-        //         doc.text(price, 80, y);
-        //         doc.text(withdrew, 120, y); // Withdrew amount with minus sign
-        //         doc.text(totalAmount, 160, y);
-
-        //         // Draw a horizontal line below each row
-        //         doc.line(10, y + 2, 200, y + 2);
-        //         y += 10;
-        //     });
-
-        //     // Add final amount
-        //     y += 10; // Add some space before the final amount
-        //     doc.setFontSize(14);
-        //     doc.text(`ยอดรวมทั้งหมด: ${finalAmount.toLocaleString()}`, 10, y); // Final amount in Thai
-
-        //     // Draw a horizontal line above the final amount
-        //     doc.line(10, y - 5, 200, y - 5);
-
-        //     // Save the PDF
-        //     doc.save('bill_report.pdf');
-        // }
     </script>
 </body>
 </html>
