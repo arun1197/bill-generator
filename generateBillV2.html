@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdn.rawgit.com/eKoopmans/html2pdf.js/master/dist/html2pdf.bundle.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            margin-right: 10px;
+        }
+        .delete-btn {
+            color: white;
+            background-color: red;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .today-btn {
+            margin-left: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bill Generator</h1>
+    <div>
+        <div class="form-group">
+            <label for="date">วันที่:</label>
+            <input type="date" id="date">
+            <button class="today-btn" onclick="setToday()">Today</button>
+        </div>
+        <div class="form-group">
+            <label for="weight">น้ำหนัก (กิโล):</label>
+            <input type="number" id="weight" step="0.01">
+        </div>
+        <div class="form-group">
+            <label for="price">ราคาต่อหน่วย:</label>
+            <input type="number" id="price" step="0.01">
+        </div>
+        <div class="form-group">
+            <label for="withdrew">ยอดเบิก:</label>
+            <input type="number" id="withdrew" step="0.01">
+        </div>
+        <button onclick="addEntry()">เพิ่มรายการ</button>
+        <button onclick="generatePDF()">สรุปบิล</button>
+    </div>
+
+    <table id="billTable">
+        <thead>
+            <tr>
+                <th>วันที่</th>
+                <th>น้ำหนัก (กิโล)</th>
+                <th>ราคาต่อหน่วย</th>
+                <th>ยอดเบิก</th>
+                <th>ยอดรวม</th>
+                <th>แก้ไข</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5"><strong>ยอดสรุป</strong></td>
+                <td id="finalAmount">0</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <script>
+        let entries = [];
+        let finalAmount = 0;
+
+        // Set the date field to today's date
+        function setToday() {
+            const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+            document.getElementById('date').value = today;
+        }
+
+        function addEntry() {
+            const date = document.getElementById('date').value;
+            const weight = parseFloat(document.getElementById('weight').value);
+            const price = parseFloat(document.getElementById('price').value);
+            const withdrew = parseFloat(document.getElementById('withdrew').value);
+
+            if (!date || isNaN(weight) || isNaN(price) || isNaN(withdrew)) {
+                alert('Please fill in all fields correctly.');
+                return;
+            }
+
+            // Calculate total amount, round down, and format with commas
+            const totalAmount = Math.floor((weight / 15) * price - withdrew);
+
+            entries.push({ date, weight, price, withdrew, totalAmount });
+
+            // Update the final amount
+            finalAmount += totalAmount;
+
+            updateTable();
+        }
+
+        function updateTable() {
+            const tbody = document.querySelector('#billTable tbody');
+            tbody.innerHTML = ''; // Clear existing rows
+
+            // Add rows for each entry
+            entries.forEach((entry, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = 
+                    `<td>${entry.date}</td>
+                    <td>${entry.weight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>${entry.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>${entry.withdrew.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>${entry.totalAmount.toLocaleString()}</td>
+                    <td><button class="delete-btn" onclick="deleteEntry(${index})">Delete</button></td>`
+                ;
+                tbody.appendChild(row);
+            });
+
+            // Update the final amount in the footer
+            document.getElementById('finalAmount').textContent = finalAmount.toLocaleString();
+        }
+
+        function deleteEntry(index) {
+            // Subtract the total amount of the entry being deleted from the final amount
+            finalAmount -= entries[index].totalAmount;
+
+            // Remove the entry from the array
+            entries.splice(index, 1);
+
+            // Update the table
+            updateTable();
+        }
+
+        async function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Add title
+            doc.setFontSize(16);
+            doc.text('Bill Report', 105, 10, { align: 'center' }); // Centered title
+            doc.setFontSize(12);
+
+            // Draw a horizontal line below the title
+            doc.line(10, 15, 200, 15); // x1, y1, x2, y2
+
+            // Add table headers
+            let y = 25; // Vertical position for the table
+            doc.text('Date', 10, y);
+            doc.text('Weight (kg)', 40, y);
+            doc.text('Price per Unit', 80, y);
+            doc.text('Withdrew Amount', 120, y);
+            doc.text('Total Amount', 160, y);
+
+            // Draw a horizontal line below the headers
+            doc.line(10, y + 2, 200, y + 2);
+            y += 10;
+
+            // Add table rows
+            entries.forEach(entry => {
+                // Ensure all values are strings and not undefined/null
+                const date = entry.date || 'N/A';
+                const weight = entry.weight
+                    ? entry.weight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '0.00';
+                const price = entry.price
+                    ? entry.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '0.00';
+                const withdrew = entry.withdrew
+                    ? `-${Math.abs(entry.withdrew).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : '-0.00'; // Add minus sign
+                const totalAmount = entry.totalAmount
+                    ? entry.totalAmount.toLocaleString()
+                    : '0';
+
+                // Add row data
+                doc.text(date, 10, y);
+                doc.text(weight, 40, y);
+                doc.text(price, 80, y);
+                doc.text(withdrew, 120, y); // Withdrew amount with minus sign
+                doc.text(totalAmount, 160, y);
+
+                // Draw a horizontal line below each row
+                doc.line(10, y + 2, 200, y + 2);
+                y += 10;
+            });
+
+            // Add final amount
+            y += 10; // Add some space before the final amount
+            doc.setFontSize(14);
+            doc.text(`Final Amount: ${finalAmount.toLocaleString()}`, 10, y);
+
+            // Draw a horizontal line above the final amount
+            doc.line(10, y - 5, 200, y - 5);
+
+            // Save the PDF
+            doc.save('bill_report.pdf');
+        }
+        // Thai Sarabun Support
+        // async function generatePDF() {
+        //     const { jsPDF } = window.jspdf;
+        //     const doc = new jsPDF();
+
+        //     // Embed a Thai font (TH Sarabun example)
+        //     doc.addFileToVFS('THSarabunNew-Regular.ttf', '<base64_encoded_font_here>');
+        //     doc.addFont('THSarabunNew-Regular.ttf', 'THSarabun', 'normal');
+        //     doc.setFont('THSarabun', 'normal');  // Use Thai font
+
+        //     // Add title
+        //     doc.setFontSize(16);
+        //     doc.text('รายงานบิล', 105, 10, { align: 'center' }); // Title in Thai
+        //     doc.setFontSize(12);
+
+        //     // Draw a horizontal line below the title
+        //     doc.line(10, 15, 200, 15); // x1, y1, x2, y2
+
+        //     // Add table headers
+        //     let y = 25; // Vertical position for the table
+        //     doc.text('วันที่', 10, y);  // Thai text
+        //     doc.text('น้ำหนัก (กิโล)', 40, y);  // Thai text
+        //     doc.text('ราคาต่อหน่วย', 80, y);  // Thai text
+        //     doc.text('ยอดเบิก', 120, y);  // Thai text
+        //     doc.text('ยอดรวม', 160, y);  // Thai text
+
+        //     // Draw a horizontal line below the headers
+        //     doc.line(10, y + 2, 200, y + 2);
+        //     y += 10;
+
+        //     // Add table rows
+        //     entries.forEach(entry => {
+        //         // Ensure all values are strings and not undefined/null
+        //         const date = entry.date || 'N/A';
+        //         const weight = entry.weight
+        //             ? entry.weight.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        //             : '0.00';
+        //         const price = entry.price
+        //             ? entry.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        //             : '0.00';
+        //         const withdrew = entry.withdrew
+        //             ? `-${Math.abs(entry.withdrew).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        //             : '-0.00'; // Add minus sign
+        //         const totalAmount = entry.totalAmount
+        //             ? entry.totalAmount.toLocaleString()
+        //             : '0';
+
+        //         // Add row data
+        //         doc.text(date, 10, y);
+        //         doc.text(weight, 40, y);
+        //         doc.text(price, 80, y);
+        //         doc.text(withdrew, 120, y); // Withdrew amount with minus sign
+        //         doc.text(totalAmount, 160, y);
+
+        //         // Draw a horizontal line below each row
+        //         doc.line(10, y + 2, 200, y + 2);
+        //         y += 10;
+        //     });
+
+        //     // Add final amount
+        //     y += 10; // Add some space before the final amount
+        //     doc.setFontSize(14);
+        //     doc.text(`ยอดรวมทั้งหมด: ${finalAmount.toLocaleString()}`, 10, y); // Final amount in Thai
+
+        //     // Draw a horizontal line above the final amount
+        //     doc.line(10, y - 5, 200, y - 5);
+
+        //     // Save the PDF
+        //     doc.save('bill_report.pdf');
+        // }
+    </script>
+</body>
+</html>
