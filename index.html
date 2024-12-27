@@ -152,20 +152,27 @@
 
         function addEntry() {
             const date = document.getElementById('date').value;
-            const licensePlate = document.getElementById('licensePlate').value.trim();
+            const licensePlate = document.getElementById('licensePlate').value || 'N/A';
             const weight = parseFloat(document.getElementById('weight').value);
             const price = parseFloat(document.getElementById('price').value);
             const withdrew = parseFloat(document.getElementById('withdrew').value);
 
-            if (!date || !licensePlate || isNaN(weight) || isNaN(price) || isNaN(withdrew)) {
+            if (!date || isNaN(weight) || isNaN(price) || isNaN(withdrew)) {
                 alert('Please fill in all fields correctly.');
                 return;
             }
 
-            const totalAmount = Math.floor((weight / 15) * price - withdrew);
+            // Check price condition for weight adjustment
+            const effectiveWeight = price > 90 ? weight / 15 : weight;
+
+            // Calculate total amount
+            const totalAmount = Math.floor(effectiveWeight * price - withdrew);
+
             entries.push({ date, licensePlate, weight, price, withdrew, totalAmount });
 
+            // Update the final amount
             finalAmount += totalAmount;
+
             updateTable();
         }
 
