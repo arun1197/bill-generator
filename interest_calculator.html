@@ -4,31 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เครื่องคำนวณดอกเบี้ย</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pikaday/1.8.2/css/pikaday.min.css">
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(to bottom, #ffffff, #e6f7ff);
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #FFEEA9, #C08B5C);
             margin: 0;
-            padding: 0;
-            color: #333;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            overflow: hidden;
+            color: #ffffff;
         }
         .container {
-            background: #ffffff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            padding: 30px;
-            max-width: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 450px;
             width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             text-align: center;
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
         }
         h1 {
-            font-size: 1.8rem;
+            font-size: 2rem;
             margin-bottom: 20px;
-            color: #007BFF;
+            color: #000000;
         }
         .form-group {
             margin-bottom: 20px;
@@ -36,79 +43,92 @@
         }
         .form-group label {
             font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             display: block;
-            color: #555;
+            color: #000000;
         }
         .form-group input {
-            width: calc(70% - 10px);
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
             font-size: 1rem;
+            color: #333;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        .form-group input:focus {
+            outline: none;
+            border: 2px solid #007BFF;
         }
         .form-group .today-button {
-            width: calc(30% - 10px);
+            margin-top: 8px;
+            display: block;
             padding: 10px;
             background-color: #007BFF;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 0.9rem;
             font-weight: 600;
-            transition: background-color 0.3s ease;
-            margin-left: 5px;
+            transition: transform 0.3s ease, background-color 0.3s ease;
         }
         .form-group .today-button:hover {
             background-color: #0056b3;
+            transform: scale(1.05);
         }
         button {
             width: 100%;
-            padding: 12px;
-            background-color: #007BFF;
+            padding: 15px;
+            background-color: #28a745;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 1rem;
             font-weight: 600;
-            transition: background-color 0.3s ease;
+            transition: transform 0.3s ease, background-color 0.3s ease;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #218838;
+            transform: scale(1.05);
         }
-        .result {
+        .result, .error {
             margin-top: 20px;
             padding: 15px;
             font-size: 1.2rem;
             font-weight: 600;
-            color: #28a745;
-            background: #e8f5e9;
-            border: 1px solid #d4edda;
-            border-radius: 5px;
+            border-radius: 10px;
+            animation: fadeIn 0.5s;
+        }
+        .result {
+            color: #000000;
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid #28a745;
         }
         .error {
-            margin-top: 20px;
-            padding: 15px;
-            font-size: 1rem;
-            font-weight: 600;
             color: #dc3545;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 5px;
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid #dc3545;
         }
         footer {
             margin-top: 20px;
-            font-size: 0.8rem;
-            color: #777;
+            font-size: 0.9rem;
+            color: #000000;
+        }
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            .container {
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>เครื่องคำนวณดอกเบี้ย</h1>
+        <h1>เครื่องคิดเลขเจ๊สา</h1>
         <div class="form-group">
             <label for="principal">จำนวนเงินต้น (บาท)</label>
             <input type="number" id="principal" inputmode="numeric" placeholder="กรอกจำนวนเงินต้น">
@@ -119,11 +139,11 @@
         </div>
         <div class="form-group">
             <label for="billDate">วันที่เริ่มบิล</label>
-            <input type="date" id="billDate">
+            <input type="text" id="billDate" placeholder="เลือกวันที่เริ่ม">
         </div>
         <div class="form-group">
             <label for="finalDate">วันที่สิ้นสุด</label>
-            <input type="date" id="finalDate">
+            <input type="text" id="finalDate" placeholder="เลือกวันที่สิ้นสุด">
             <button class="today-button" onclick="setToday()">วันนี้</button>
         </div>
         <button onclick="calculateInterest()">คำนวณดอกเบี้ย</button>
@@ -131,39 +151,70 @@
         <footer>&copy; 2024 เครื่องคำนวณดอกเบี้ย</footer>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/th.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pikaday/1.8.2/pikaday.min.js"></script>
     <script>
+        moment.locale('th');
+
+        function initializeDatePicker(id) {
+            new Pikaday({
+                field: document.getElementById(id),
+                format: 'DD/MM/YYYY',
+                toString(date) {
+                    return moment(date).add(543, 'years').format('DD/MM/YYYY'); // Convert to Thai year
+                },
+                parse(dateString) {
+                    return moment(dateString, 'DD/MM/YYYY').subtract(543, 'years').toDate(); // Convert back
+                },
+                i18n: {
+                    previousMonth: 'เดือนก่อนหน้า',
+                    nextMonth: 'เดือนถัดไป',
+                    months: [
+                        'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+                    ],
+                    weekdays: [
+                        'อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'
+                    ],
+                    weekdaysShort: ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.']
+                }
+            });
+        }
+
+        function setToday() {
+            const today = moment().add(543, 'years').format('DD/MM/YYYY');
+            document.getElementById('finalDate').value = today;
+        }
+
         function calculateInterest() {
             const principal = parseFloat(document.getElementById('principal').value);
             const rate = parseFloat(document.getElementById('rate').value);
-            const billDate = new Date(document.getElementById('billDate').value);
-            const finalDate = new Date(document.getElementById('finalDate').value);
+            const billDate = moment(document.getElementById('billDate').value, 'DD/MM/YYYY').subtract(543, 'years');
+            const finalDate = moment(document.getElementById('finalDate').value, 'DD/MM/YYYY').subtract(543, 'years');
 
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = ""; // Clear previous results
 
-            if (isNaN(principal) || isNaN(rate) || !billDate || !finalDate) {
+            if (isNaN(principal) || isNaN(rate) || !billDate.isValid() || !finalDate.isValid()) {
                 resultDiv.innerHTML = `<div class="error">กรุณากรอกข้อมูลให้ครบถ้วน</div>`;
                 return;
             }
 
-            const timeDifference = finalDate - billDate;
-            if (timeDifference < 0) {
+            if (finalDate.isBefore(billDate)) {
                 resultDiv.innerHTML = `<div class="error">วันที่สิ้นสุดต้องไม่เร็วกว่าวันที่เริ่มบิล</div>`;
                 return;
             }
 
-            const daysBetween = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+            const daysBetween = finalDate.diff(billDate, 'days');
             const monthsBetween = daysBetween / 30;
-
             const totalInterest = (principal * rate * monthsBetween) / 100;
 
             resultDiv.innerHTML = `<div class="result">ดอกเบี้ยทั้งหมด: ${totalInterest.toFixed(2)} บาท</div>`;
         }
 
-        function setToday() {
-            const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-            document.getElementById('finalDate').value = today;
-        }
+        initializeDatePicker('billDate');
+        initializeDatePicker('finalDate');
     </script>
 </body>
 </html>

@@ -7,29 +7,53 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f4f4f9;
-            text-align: center;
-            margin-top: 50px;
+            background: linear-gradient(to bottom, #001f3f, #007bff);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            font-size: 3rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            margin-bottom: 40px;
         }
         button {
-            padding: 20px;
+            padding: 15px 30px;
             margin: 10px;
-            background-color: #007BFF;
+            background: linear-gradient(to right, #4caf50, #008cba);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 30px;
             font-size: 1.5rem;
+            font-weight: bold;
             cursor: pointer;
-            transition: 0.3s;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         button:hover {
-            background-color: #0056b3;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to Saw-O Service</h1>
-    <button onclick="location.href='generateBillV3.html'">วางบิล</button>
-    <button onclick="location.href='interest_calculator.html'">คำนวณดอกเบี้ย</button>
+    <h1>ยินดีต้อนรับสู่ซอโอบริการ</h1>
+    <div class="button-container">
+        <button onclick="location.href='generateBillV3.html'">วางบิล</button>
+        <button onclick="location.href='interest_calculator.html'">คำนวณดอกเบี้ย</button>
+    </div>
 </body>
 </html>
